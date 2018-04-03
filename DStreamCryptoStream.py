@@ -3,6 +3,7 @@ from pyspark.streaming import StreamingContext
 from pyspark.streaming.kafka import KafkaUtils
 from pyspark.sql import *
 from pyspark.sql.types import *
+import json
 
 MASTER = "local[*]"
 APP_NAME = "DStreamCryptoStream"
@@ -22,7 +23,7 @@ kafkaStream = KafkaUtils.createDirectStream(ssc=ssc,topics=KAFKA_TOPIC
 
 # The data from Kafka is returned as a tuple (Key, Value). So we'll want to
 # map the data and extract the value from the tuple
-value = kafkaStream.map(lambda line: line[1])
+value = kafkaStream.map(lambda line: json.dumps(line[1]))
 
 
 # Lazily instantiated global instance of SparkSession (This is a hack to grab
@@ -43,20 +44,22 @@ def process(time, rdd):
         spark = getSparkSessionInstance(rdd.context.getConf())
 
         # Specify the Schema for the JSON payload
+        # Boolean indicates if Null is acceptable, in this case we don't want
+        #  null values
         schema = StructType([
-            StructField('exchange', StringType())
-            , StructField('cryptocurrency', StringType())
-            , StructField('basecurrency', StringType())
-            , StructField('type', StringType())
-            , StructField('price', FloatType())
-            , StructField('size', FloatType())
-            , StructField('bid', FloatType())
-            , StructField('ask', FloatType())
-            , StructField('open', FloatType())
-            , StructField('high', FloatType())
-            , StructField('low', FloatType())
-            , StructField('volume', FloatType())
-            , StructField('timestamp', FloatType())
+            StructField('exchange', StringType(), False)
+            , StructField('cryptocurrency', StringType(), False)
+            , StructField('basecurrency', StringType(), False)
+            , StructField('type', StringType(), False)
+            , StructField('price', FloatType(),False)
+            , StructField('size', FloatType(),False)
+            , StructField('bid', FloatType(), False)
+            , StructField('ask', FloatType(), False)
+            , StructField('open', FloatType(), False)
+            , StructField('high', FloatType(), False)
+            , StructField('low', FloatType(), False)
+            , StructField('volume', FloatType(), False)
+            , StructField('timestamp', FloatType(), False)
             ])
 
         # Convert RDD[String] to JSON DataFrame by casting the schema
