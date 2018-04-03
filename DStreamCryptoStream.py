@@ -4,12 +4,12 @@ from pyspark.streaming.kafka import KafkaUtils
 from pyspark.sql import *
 from pyspark.sql.types import *
 
-master = "local[*]"
-appName = "DStreamCryptoStream"
+MASTER = "local[*]"
+APP_NAME = "DStreamCryptoStream"
 KAFKA_BROKER = "pathdp3.field.hortonworks.com:6667"
 KAFKA_TOPIC = ['cryptocurrency-nifi-data']
 
-sc = SparkContext(master, appName)
+sc = SparkContext(MASTER, APP_NAME)
 ssc = StreamingContext(sc, 1)
 
 # Instantiate our DirectStream with the KafkaUtils class and subsequent method
@@ -76,7 +76,6 @@ def process(time, rdd):
         spark.sql("SELECT exchange, count(*) from CryptoCurrency GROUP BY "
                   "exchange").show()
     except:
-        # insert logging for debugging issues
         pass
 
 value.foreachRDD(process)
@@ -85,6 +84,8 @@ ssc.start()
 ssc.awaitTermination()
 
 # To Do:
-# Offset Kafka with Earliest Data
-# research hackery
-# shim this application in Java
+# Offset Kafka with Earliest Data...what is the proper key:value argument?
+# research what Spark documentation means by "hackery"
+# write this application in Java
+# insert logging for debugging issues
+# insert pausing for debugging, this is delivered too fast to the console
