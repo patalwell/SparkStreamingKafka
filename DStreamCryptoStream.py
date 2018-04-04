@@ -19,11 +19,15 @@ ssc = StreamingContext(sc, 1)
 
 kafkaStream = KafkaUtils.createDirectStream(ssc=ssc,topics=KAFKA_TOPIC
             ,kafkaParams={"metadata.broker.list":KAFKA_BROKER,
-                          "auto.offset.reset":"smallest"})
+                          "startingOffsets":"earliest"})
 
 # The data from Kafka is returned as a tuple (Key, Value). So we'll want to
 # map the data and extract the value from the tuple
-value = kafkaStream.rdd.map(lambda line: str(line[1]))
+value = kafkaStream.map(lambda line: line[1])
+
+# print type(value)
+# <class 'pyspark.streaming.kafka.KafkaTransformedDStream'>
+
 
 # Lazily instantiated global instance of SparkSession (This is a hack to grab
 #  sql context)
@@ -46,38 +50,53 @@ def process(time, rdd):
         # Boolean indicates if Null is acceptable, in this case we don't want
         #  null values
         schema = StructType([
-            StructField('exchange', StringType(), False)
-            , StructField('cryptocurrency', StringType(), False)
-            , StructField('basecurrency', StringType(), False)
-            , StructField('type', StringType(), False)
-            , StructField('price', FloatType(),False)
-            , StructField('size', FloatType(),False)
-            , StructField('bid', FloatType(), False)
-            , StructField('ask', FloatType(), False)
-            , StructField('open', FloatType(), False)
-            , StructField('high', FloatType(), False)
-            , StructField('low', FloatType(), False)
-            , StructField('volume', FloatType(), False)
-            , StructField('timestamp', FloatType(), False)
+            StructField('exchange', StringType())
+            , StructField('cryptocurrency', StringType())
+            , StructField('basecurrency', StringType())
+            , StructField('type', StringType())
+            , StructField('price', FloatType())
+            , StructField('size', FloatType())
+            , StructField('bid', FloatType())
+            , StructField('ask', FloatType())
+            , StructField('open', FloatType())
+            , StructField('high', FloatType())
+            , StructField('low', FloatType())
+            , StructField('volume', FloatType())
+            , StructField('timestamp', FloatType())
             ])
 
         # Convert RDD[String] to JSON DataFrame by casting the schema
         print "======= Printing Raw Data ======="
-        data = spark.read.json(rdd, schema=schema)
+        # data = spark.read.json(rdd, schema=schema)
+        raw_data = spark.read.json(rdd)
+        clean_data = raw_data.fillna("0")
 
-        # print "========= This is the Schema: Notice the correct types for " \
-        #       "aggregations ========="
+        # print "========= This is the Schema: ========="
         # data.printSchema()
 
+        # Cast Data Types for Now within DF
         print "======== This is the full dataframe ========"
-        data.select('*').show()
+        df = clean_data\
+            .withColumn("price",clean_data["price"].cast(FloatType()))\
+            .withColumn("size",clean_data["size"].cast(FloatType()))\
+            .withColumn("bid",clean_data["bid"].cast(FloatType()))\
+            .withColumn("ask",clean_data["adk"].cast(FloatType()))\
+            .withColumn("open",clean_data["open"].cast(FloatType()))\
+            .withColumn("high",clean_data["high"].cast(FloatType()))\
+            .withColumn("low",clean_data["low"].cast(FloatType()))\
+            .withColumn("volume",clean_data["volume"].cast(FloatType()))\
+            .withColumn("timestamp",clean_data["timestamp"].cast(DateType()))
 
-        # Create a tempview so edits can be made in SQL
-        data.createOrReplaceTempView("CryptoCurrency")
+        # Check the explicitly mapped schema
+        df.printSchema()
+
+        # Create a tempView so edits can be made in SQL
+        df.createOrReplaceTempView("CryptoCurrency")
 
         print "====== This is a running count of popular exchanges ======="
-        spark.sql("SELECT exchange, count(*) from CryptoCurrency GROUP BY "
-                  "exchange").show()
+        spark.sql("SELECT cryptocurrency, avg(price) as total_transactions "
+                  "FROM CryptoCurrency "
+                  "GROUP BY exchange").show()
     except:
         pass
 
@@ -88,8 +107,31 @@ ssc.start()
 ssc.awaitTermination()
 
 # To Do:
-# Offset Kafka with Earliest Data...what is the proper key:value argument?
 # research what Spark documentation means by "hackery"
 # write this application in Java
 # insert logging for debugging issues
 # insert pausing for debugging, this is delivered too fast to the console
+
+
+# Methods/Schema under question; cannot seem to map schema on creation of
+# dataFrame which will lead to a full table scan!
+
+# rdd = sc.textFile(
+#     "/Users/pnalwell/development/druid-satori-demo/utilities/output.json",
+#     use_unicode=False)
+
+# mapped_fields = data.rdd.map(lambda l: Row(
+#     exchange=str(l[0])
+#     ,cryptocurrency=str([1])
+#     ,basecurrency=str(l[2])
+#     ,type=str(l[3])
+#     ,price=float(l[4])
+#     ,size=str(l[5])
+#     ,bid=str(l[6])
+#     ,ask=str(l[7])
+#     ,open=str(l[8])
+#     ,high=str(l[9])
+#     ,low=str(l[10])
+#     ,volume=str(l[11])
+#     ,timestamp=str(l[12])
+# ))
