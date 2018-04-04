@@ -1,9 +1,15 @@
 <h1>Spark Streaming and Structured Streaming with PySpark and Kafka</h1>
 
 <h3>Background:</h3>
-I was trying to familiarize myself with Spark's streaming libraries; but wound up running into dependency issues as it relates to Kafka 10 and Pyspark Structured Streaming, which is still experimental. The spark streaming application contains logic that grabs a kafka topic and applies DF transfomrations in order to create a data frame, cast a schema, and derive statistical values in realtime.
+This repository contains two applications CryptoStream.py and DStreamCryptoStream.py. The former is using Spark's Structured Streaming API while the latter is using Spark's Spark Streaming API. There are depenency issues with the first application, however the Structured Streaming API is still experimental with Kafka 10. I still ran into the same error with a different package, namely Kafka 8, but have yet to research potential issues beyond scape goating the class dependecies bundleded into the jars. The DStreamCryptoStream.py application works as intended with Kafka 8 libraries.
 
 <h3>Current Issues:</h3>
+
+1. CryptoStream.py is failing with Caused by: 
+
+java.lang.ClassNotFoundException: org.apache.kafka.common.serialization.ByteArrayDeserializer. 
+
+Added several dependencies to no avail. Leaving this alone until the API is stabilized
 
 
 <h3>Sample Results:</h3>
