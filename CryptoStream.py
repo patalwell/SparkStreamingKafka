@@ -8,8 +8,13 @@ from pyspark.streaming.kafka import KafkaUtils
 from pyspark.sql.functions import explode
 from pyspark.sql.functions import split
 
+# Note: When running this app with spark-submit you need the following
+# packages: --packages org.apache.spark:spark-sql-kafka-0-10_2.11:2.2.0
+# org.apache.spark:spark-streaming-kafka-0-10-assembly_2.10:2.2.0
+# org.apache.spark:spark-streaming-kafka-0-10_2.11:2.2.0
+
 KAFKA_BROKER = "pathdp3.field.hortonworks.com:6667"
-KAFKA_TOPIC = "cryptocurrency-market-data"
+KAFKA_TOPIC = "cryptocurrency-nifi-data"
 
 # satoriPayload schema
 
@@ -42,27 +47,30 @@ messages = spark\
     .format("kafka")\
     .option("kafka.bootstrap.servers", KAFKA_BROKER)\
     .option("subscribe", KAFKA_TOPIC)\
-    .option("value.deserializer","org.common.serialization.StringSerializer")\
+    .option("startingOffsets", "earliest")\
+    .option("value.deserializer",
+            "org.common.serialization.StringDeserializer")\
     .option("key.deserializer",
-            "org.common.serialization.ByteArrayDeserializer")\
+            "org.common.serialization.StringDeserializer")\
     .load()
-# .schema(SATORI_SCHEMA)\
 
-df = messages.selectExpr("CAST(key AS STRING)",\
-                         "CAST(value AS STRING) as ""satori_data")\
-    .select(from_json("satori_data",SATORI_SCHEMA).alias("satori_data"))
+df = messages.selectExpr("CAST(value AS STRING)")
 
+print "========= This is the DataType of Kafka Value ========="
+print(type(df))
+
+print "======== This is the schema of the payload ========="
 df.printSchema()
 
-df.writeStream\
-    .outputMode("update")\
-    .format("console")\
+rawQuery = df.writeStream\
+    .format("memory")\
     .option("truncate", False) \
-    .option("value.deserializer",
-            "org.common.serialization.StringDeSerializer") \
-    .option("key.deserializer",
-            "org.common.serialization.ByteArrayDeserializer")\
+    .queryName("Payload")\
     .start()
+
+spark.sql("select * from Payload").show()
+
+
 
 # application is failing with Caused by: java.lang.ClassNotFoundException:#
 # org.apache.kafka.common.serialization.ByteArrayDeserializer. Added several

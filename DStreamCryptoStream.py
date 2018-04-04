@@ -23,8 +23,7 @@ kafkaStream = KafkaUtils.createDirectStream(ssc=ssc,topics=KAFKA_TOPIC
 
 # The data from Kafka is returned as a tuple (Key, Value). So we'll want to
 # map the data and extract the value from the tuple
-value = kafkaStream.map(lambda line: json.dumps(line[1]))
-
+value = kafkaStream.rdd.map(lambda line: str(line[1]))
 
 # Lazily instantiated global instance of SparkSession (This is a hack to grab
 #  sql context)
@@ -63,11 +62,12 @@ def process(time, rdd):
             ])
 
         # Convert RDD[String] to JSON DataFrame by casting the schema
+        print "======= Printing Raw Data ======="
         data = spark.read.json(rdd, schema=schema)
 
-        print "========= This is the Schema: Notice the correct types for " \
-              "aggregations ========="
-        data.printSchema()
+        # print "========= This is the Schema: Notice the correct types for " \
+        #       "aggregations ========="
+        # data.printSchema()
 
         print "======== This is the full dataframe ========"
         data.select('*').show()
@@ -81,6 +81,7 @@ def process(time, rdd):
     except:
         pass
 
+# value.pprint()
 value.foreachRDD(process)
 
 ssc.start()
