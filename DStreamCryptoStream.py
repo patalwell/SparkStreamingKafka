@@ -93,10 +93,18 @@ def process(time, rdd):
         # Create a tempView so edits can be made in SQL
         df.createOrReplaceTempView("CryptoCurrency")
 
-        print "====== This is a running count of popular exchanges ======="
-        spark.sql("SELECT cryptocurrency, avg(price) as total_transactions "
+        print "====== Running Statistics of CryptoCurrency ======="
+        spark.sql("SELECT cryptocurrency"
+                  ", avg(price) as average_price"
+                  ", max(price) as max_price"
+                  ", min(price) as min_price"
+                  ", std(price) as stnd_dev "
                   "FROM CryptoCurrency "
-                  "GROUP BY exchange").show()
+                  "WHERE cryptocurrency =='ADX' "
+                  "OR cryptocurrency == 'BTC' "
+                  "OR cryptocurrency == 'ETH' "
+                  "GROUP BY cryptocurrency "
+                  "ORDER BY cryptocurrency").show()
     except:
         pass
 
