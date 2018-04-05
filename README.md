@@ -5,24 +5,21 @@ This repository contains two applications CryptoStream.py and DStreamCryptoStrea
 
 <h3>Current Issues:</h3>
 
-CryptoStream.py is failing with 
+1. CryptoStream.py is failing with 
 
       Caused by: java.lang.ClassNotFoundException: org.apache.kafka.common.serialization.ByteArrayDeserializer. 
 
       I added several dependencies to no avail. Leaving this alone until the API is stabilized
 
-DStreamCryptoStream.py is conducting a full table scan prior to mapping explicit data types to columns. I've tried to circumnavigate the limitations of the createDataFrame() parameters e.g. unicode and Row(); but couldn't find a solid means to extracting complex tolkens from the JSON payload to string.
+2. DStreamCryptoStream.py is conducting a full table scan prior to mapping explicit data types to columns. I've tried to circumnavigate the limitations of the createDataFrame() parameters e.g. unicode and Row(); but couldn't find a solid means to extracting complex tolkens from the JSON payload to string.
 
 <h3>To Do:</h3>
 
-# research what Spark documentation means by "hackery"
-# write this application in Java
-# insert logging for debugging issues
-# insert pausing for debugging, this is delivered too fast to the console
-# Methods/Schema under question; cannot seem to map schema on creation of
-# dataFrame which will lead to a full table scan!
-
-
+1. Research what Spark documentation means by "hackery"
+2. Write this application in Java
+3. Insert logging for debugging issues
+4. Insert pausing for debugging, this is delivered too fast to the console
+5. Methods/Schema under question; cannot seem to map schema on creation of dataFrame which will lead to a full table scan!
 
 <h3>Sample Results:</h3>
 
