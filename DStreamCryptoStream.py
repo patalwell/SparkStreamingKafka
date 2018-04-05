@@ -3,19 +3,24 @@ from pyspark.streaming import StreamingContext
 from pyspark.streaming.kafka import KafkaUtils
 from pyspark.sql import *
 from pyspark.sql.types import *
-import json
 
 MASTER = "local[*]"
 APP_NAME = "DStreamCryptoStream"
 KAFKA_BROKER = "pathdp3.field.hortonworks.com:6667"
 KAFKA_TOPIC = ['cryptocurrency-nifi-data']
+BATCH_INTERVAL = 10
 
 sc = SparkContext(MASTER, APP_NAME)
-ssc = StreamingContext(sc, 1)
+
+# constructor accepts SparkContext and Duration in Seconds
+# e.g. JavaStreamingContext jssc = new JavaStreamingContext(sparkConf,
+# Durations.seconds(10));
+ssc = StreamingContext(sc, BATCH_INTERVAL)
 
 # Instantiate our DirectStream with the KafkaUtils class and subsequent method
 # Parameters include StreamingContext, Topics, KafkaParameters
 # To set the stream to capture the earliest data use:
+
 
 kafkaStream = KafkaUtils.createDirectStream(ssc=ssc,topics=KAFKA_TOPIC
             ,kafkaParams={"metadata.broker.list":KAFKA_BROKER,
@@ -98,7 +103,6 @@ ssc.awaitTermination()
 # research what Spark documentation means by "hackery"
 # write this application in Java
 # insert logging for debugging issues
-# insert pausing for debugging, this is delivered too fast to the console
 
 
 # Methods/Schema under question; cannot seem to map schema on creation of
