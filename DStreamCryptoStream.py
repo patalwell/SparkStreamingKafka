@@ -86,9 +86,11 @@ def process(time, rdd):
     except:
         pass
 
-# value.pprint()
+# conduct a functional transformation on our DStreams object value; we are
+# inserting our def process function here
 value.foreachRDD(process)
 
+# start our computations and stop when the user has issued a keyboard command
 ssc.start()
 ssc.awaitTermination()
 

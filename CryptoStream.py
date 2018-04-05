@@ -63,12 +63,12 @@ print "======== This is the schema of the payload ========="
 df.printSchema()
 
 rawQuery = df.writeStream\
-    .format("memory")\
-    .option("truncate", False) \
-    .queryName("Payload")\
-    .start()
-
-spark.sql("select * from Payload").show()
+#     .format("memory")\
+#     .option("truncate", False) \
+#     .queryName("Payload")\
+#     .start()
+#
+# spark.sql("select * from Payload").show()
 
 
 
