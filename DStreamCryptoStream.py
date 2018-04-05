@@ -25,6 +25,8 @@ kafkaStream = KafkaUtils.createDirectStream(ssc=ssc,topics=KAFKA_TOPIC
 # map the data and extract the value from the tuple
 value = kafkaStream.map(lambda line: line[1])
 
+print value
+
 # print type(value)
 # <class 'pyspark.streaming.kafka.KafkaTransformedDStream'>
 
@@ -46,49 +48,25 @@ def process(time, rdd):
         # Get the singleton instance of SparkSession
         spark = getSparkSessionInstance(rdd.context.getConf())
 
-        # Specify the Schema for the JSON payload
-        # Boolean indicates if Null is acceptable, in this case we don't want
-        #  null values
-        schema = StructType([
-            StructField('exchange', StringType())
-            , StructField('cryptocurrency', StringType())
-            , StructField('basecurrency', StringType())
-            , StructField('type', StringType())
-            , StructField('price', FloatType())
-            , StructField('size', FloatType())
-            , StructField('bid', FloatType())
-            , StructField('ask', FloatType())
-            , StructField('open', FloatType())
-            , StructField('high', FloatType())
-            , StructField('low', FloatType())
-            , StructField('volume', FloatType())
-            , StructField('timestamp', FloatType())
-            ])
-
         # Convert RDD[String] to JSON DataFrame by casting the schema
-        print "======= Printing Raw Data ======="
         # data = spark.read.json(rdd, schema=schema)
         raw_data = spark.read.json(rdd)
         clean_data = raw_data.fillna("0")
 
-        # print "========= This is the Schema: ========="
-        # data.printSchema()
-
-        # Cast Data Types for Now within DF
-        print "======== This is the full dataframe ========"
+        # Cast data types within DF
         df = clean_data\
             .withColumn("price",clean_data["price"].cast(FloatType()))\
             .withColumn("size",clean_data["size"].cast(FloatType()))\
             .withColumn("bid",clean_data["bid"].cast(FloatType()))\
-            .withColumn("ask",clean_data["adk"].cast(FloatType()))\
+            .withColumn("ask",clean_data["ask"].cast(FloatType()))\
             .withColumn("open",clean_data["open"].cast(FloatType()))\
             .withColumn("high",clean_data["high"].cast(FloatType()))\
             .withColumn("low",clean_data["low"].cast(FloatType()))\
             .withColumn("volume",clean_data["volume"].cast(FloatType()))\
             .withColumn("timestamp",clean_data["timestamp"].cast(DateType()))
 
-        # Check the explicitly mapped schema
-        df.printSchema()
+        # # Check the explicitly mapped schema
+        # df.printSchema()
 
         # Create a tempView so edits can be made in SQL
         df.createOrReplaceTempView("CryptoCurrency")
@@ -143,3 +121,20 @@ ssc.awaitTermination()
 #     ,volume=str(l[11])
 #     ,timestamp=str(l[12])
 # ))
+
+# Specify the Schema for the JSON payload
+# schema = StructType([
+#     StructField('exchange', StringType())
+#     , StructField('cryptocurrency', StringType())
+#     , StructField('basecurrency', StringType())
+#     , StructField('type', StringType())
+#     , StructField('price', FloatType())
+#     , StructField('size', FloatType())
+#     , StructField('bid', FloatType())
+#     , StructField('ask', FloatType())
+#     , StructField('open', FloatType())
+#     , StructField('high', FloatType())
+#     , StructField('low', FloatType())
+#     , StructField('volume', FloatType())
+#     , StructField('timestamp', FloatType())
+#     ])
