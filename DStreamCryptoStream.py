@@ -4,6 +4,11 @@ from pyspark.streaming.kafka import KafkaUtils
 from pyspark.sql import *
 from pyspark.sql.types import *
 
+""" Note: When running this app with spark-submit you need the following
+spark-submit --packages org.apache.spark:spark-streaming-kafka-0-8-assembly_2\
+.11:2.2.0 DStreamCryptoStream.py
+"""
+
 MASTER = "local[*]"
 APP_NAME = "DStreamCryptoStream"
 KAFKA_BROKER = "pathdp3.field.hortonworks.com:6667"
@@ -53,22 +58,28 @@ def process(time, rdd):
         # Get the singleton instance of SparkSession
         spark = getSparkSessionInstance(rdd.context.getConf())
 
-        # Convert RDD[String] to JSON DataFrame by casting the schema
-        # data = spark.read.json(rdd, schema=schema)
-        raw_data = spark.read.json(rdd)
-        clean_data = raw_data.fillna("0")
+        schema = StructType([
+            StructField('exchange', StringType())
+            , StructField('cryptocurrency', StringType())
+            , StructField('basecurrency', StringType())
+            , StructField('type', StringType())
+            , StructField('price', DoubleType())
+            , StructField('size', DoubleType())
+            , StructField('bid', DoubleType())
+            , StructField('ask', DoubleType())
+            , StructField('open', DoubleType())
+            , StructField('high', DoubleType())
+            , StructField('low', DoubleType())
+            , StructField('volume', DoubleType())
+            , StructField('timestamp', LongType())
+        ])
 
-        # Cast data types within DF
-        df = clean_data\
-            .withColumn("price",clean_data["price"].cast(FloatType()))\
-            .withColumn("size",clean_data["size"].cast(FloatType()))\
-            .withColumn("bid",clean_data["bid"].cast(FloatType()))\
-            .withColumn("ask",clean_data["ask"].cast(FloatType()))\
-            .withColumn("open",clean_data["open"].cast(FloatType()))\
-            .withColumn("high",clean_data["high"].cast(FloatType()))\
-            .withColumn("low",clean_data["low"].cast(FloatType()))\
-            .withColumn("volume",clean_data["volume"].cast(FloatType()))\
-            .withColumn("timestamp",clean_data["timestamp"].cast(DateType()))
+        # Convert RDD[String] to JSON DataFrame by casting the schema
+        data = spark.read.json(rdd, schema=schema)
+        # data.show()
+        # drop null values from our aggregations
+        df = data.na.drop()
+
 
         # # Check the explicitly mapped schema
         # df.printSchema()
@@ -99,14 +110,21 @@ value.foreachRDD(process)
 ssc.start()
 ssc.awaitTermination()
 
-# To Do:
-# research what Spark documentation means by "hackery"
-# write this application in Java
-# insert logging for debugging issues
 
+"""
+To Do:
 
-# Methods/Schema under question; cannot seem to map schema on creation of
-# dataFrame which will lead to a full table scan!
+1. Research what Spark documentation means by "hackery"
+2. Write this application in Java
+3. Insert logging for debugging issues
+
+Methods/Schema under question; cannot seem to map schema on creation of
+dataFrame which will lead to a full table scan!
+Update: Looks like the data needs to be typeCasted prior to entry into spark; 
+particularly with schemaLess payloads like JSON
+
+Object Assets for Application Testing are below:
+"""
 
 # rdd = sc.textFile(
 #     "/Users/pnalwell/development/druid-satori-demo/utilities/output.json",
@@ -117,30 +135,25 @@ ssc.awaitTermination()
 #     ,cryptocurrency=str([1])
 #     ,basecurrency=str(l[2])
 #     ,type=str(l[3])
-#     ,price=float(l[4])
-#     ,size=str(l[5])
-#     ,bid=str(l[6])
-#     ,ask=str(l[7])
-#     ,open=str(l[8])
-#     ,high=str(l[9])
-#     ,low=str(l[10])
-#     ,volume=str(l[11])
-#     ,timestamp=str(l[12])
+#     ,price=double(l[4])
+#     ,size=double(l[5])
+#     ,bid=double(l[6])
+#     ,ask=double(l[7])
+#     ,open=double(l[8])
+#     ,high=double(l[9])
+#     ,low=double(l[10])
+#     ,volume=double(l[11])
+#     ,timestamp=long(l[12])
 # ))
 
-# Specify the Schema for the JSON payload
-# schema = StructType([
-#     StructField('exchange', StringType())
-#     , StructField('cryptocurrency', StringType())
-#     , StructField('basecurrency', StringType())
-#     , StructField('type', StringType())
-#     , StructField('price', FloatType())
-#     , StructField('size', FloatType())
-#     , StructField('bid', FloatType())
-#     , StructField('ask', FloatType())
-#     , StructField('open', FloatType())
-#     , StructField('high', FloatType())
-#     , StructField('low', FloatType())
-#     , StructField('volume', FloatType())
-#     , StructField('timestamp', FloatType())
-#     ])
+# # Cast data types within DF
+# df = clean_data\
+#     .withColumn("price",clean_data["price"].cast(FloatType()))\
+#     .withColumn("size",clean_data["size"].cast(FloatType()))\
+#     .withColumn("bid",clean_data["bid"].cast(FloatType()))\
+#     .withColumn("ask",clean_data["ask"].cast(FloatType()))\
+#     .withColumn("open",clean_data["open"].cast(FloatType()))\
+#     .withColumn("high",clean_data["high"].cast(FloatType()))\
+#     .withColumn("low",clean_data["low"].cast(FloatType()))\
+#     .withColumn("volume",clean_data["volume"].cast(FloatType()))\
+#     .withColumn("timestamp",clean_data["timestamp"].cast(DateType()))
