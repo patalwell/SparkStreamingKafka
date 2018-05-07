@@ -14,6 +14,7 @@ APP_NAME = "DStreamCryptoStream"
 KAFKA_BROKER = "pathdp3.field.hortonworks.com:6667"
 KAFKA_TOPIC = ['cryptocurrency-nifi-data']
 BATCH_INTERVAL = 10
+OFFSET = "earliest"
 
 sc = SparkContext(MASTER, APP_NAME)
 
@@ -29,7 +30,7 @@ ssc = StreamingContext(sc, BATCH_INTERVAL)
 
 kafkaStream = KafkaUtils.createDirectStream(ssc=ssc,topics=KAFKA_TOPIC
             ,kafkaParams={"metadata.broker.list":KAFKA_BROKER,
-                          "startingOffsets":"earliest"})
+                          "startingOffsets":OFFSET})
 
 # The data from Kafka is returned as a tuple (Key, Value). So we'll want to
 # map the data and extract the value from the tuple
@@ -120,7 +121,7 @@ To Do:
 
 Methods/Schema under question; cannot seem to map schema on creation of
 dataFrame which will lead to a full table scan!
-Update: Looks like the data needs to be typeCasted prior to entry into spark; 
+Update: Looks like the data needs to be typeCasted prior to entry into spark;
 particularly with schemaLess payloads like JSON
 
 Object Assets for Application Testing are below:
