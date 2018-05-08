@@ -11,7 +11,7 @@ spark-submit --packages org.apache.spark:spark-streaming-kafka-0-8-assembly_2\
 
 MASTER = "local[*]"
 APP_NAME = "DStreamCryptoStream"
-KAFKA_BROKER = "pathdp3.field.hortonworks.com:6667"
+KAFKA_BROKER = "pathdf3.field.hortonworks.com:6667"
 KAFKA_TOPIC = ['cryptocurrency-nifi-data']
 BATCH_INTERVAL = 10
 OFFSET = "earliest"
@@ -81,13 +81,15 @@ def process(time, rdd):
         # drop null values from our aggregations
         df = data.na.drop()
 
-
-        # # Check the explicitly mapped schema
+        # Check the explicitly mapped schema
         # df.printSchema()
 
-        # Create a tempView so edits can be made in SQL
+        #Create a tempView so edits can be made in SQL
         df.createOrReplaceTempView("CryptoCurrency")
 
+        # spark.sql("SELECT * FROM CryptoCurrency").show()
+
+        #Get avg, max, min, and stdev for BTC, ETH, and ALX
         print "====== Running Statistics of CryptoCurrency ======="
         spark.sql("SELECT cryptocurrency"
                   ", avg(price) as average_price"
@@ -121,8 +123,10 @@ To Do:
 
 Methods/Schema under question; cannot seem to map schema on creation of
 dataFrame which will lead to a full table scan!
+
 Update: Looks like the data needs to be typeCasted prior to entry into spark;
-particularly with schemaLess payloads like JSON
+particularly with schemaLess payloads like JSON. You can use nifi or custom
+scripts for this process prior to entry into Kafka.
 
 Object Assets for Application Testing are below:
 """

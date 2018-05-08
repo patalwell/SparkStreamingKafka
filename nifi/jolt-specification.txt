@@ -1,0 +1,49 @@
+//Jolt Specification for Jolt Transform Json Processor
+//Use Jolt Transformation DSL of type Chain
+
+[{
+    "operation": "remove",
+    "spec": {
+      "timestamp": ""
+    }
+},
+  {
+    "operation": "default",
+    "spec": {
+      "timestamp": "${now():toNumber()}"
+    }
+},
+  {
+    "operation": "modify-overwrite-beta",
+    "spec": {
+      "exchange": "=toString",
+      "cryptocurrency": "=toString",
+      "type": "=toString",
+      "price": ["=toDouble", 0.0],
+      "size": ["=toDouble", 0.0],
+      "bid": ["=toDouble", 0.0],
+      "ask": ["=toDouble", 0.0],
+      "open": ["=toDouble", 0.0],
+      "high": ["=toDouble", 0.0],
+      "low": ["=toDouble", 0.0],
+      "volume": ["=toDouble", 0.0],
+      "timestamp": "=toLong"
+    }
+}]
+
+//Raw Satori payload
+{
+  "exchange" : "OKCoin",
+  "cryptocurrency" : "BTC",
+  "basecurrency" : "USD",
+  "type" : "market",
+  "price" : "9108.77",
+  "size" : null,
+  "bid" : "9139.21",
+  "ask" : "9207.94",
+  "open" : null,
+  "high" : "9519.99",
+  "low" : "9026.95",
+  "volume" : "119.54",
+  "timestamp" : "1525197075190"
+}
