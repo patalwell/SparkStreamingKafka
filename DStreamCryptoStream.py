@@ -16,6 +16,7 @@ KAFKA_TOPIC = ['cryptocurrency-nifi-data']
 BATCH_INTERVAL = 10
 OFFSET = "earliest"
 
+#constructor for sparkContext; enables spark core
 sc = SparkContext(MASTER, APP_NAME)
 
 # constructor accepts SparkContext and Duration in Seconds
@@ -26,16 +27,15 @@ ssc = StreamingContext(sc, BATCH_INTERVAL)
 # Instantiate our DirectStream with the KafkaUtils class and subsequent method
 # Parameters include StreamingContext, Topics, KafkaParameters
 # To set the stream to capture the earliest data use:
-
-
 kafkaStream = KafkaUtils.createDirectStream(ssc=ssc,topics=KAFKA_TOPIC
             ,kafkaParams={"metadata.broker.list":KAFKA_BROKER,
                           "startingOffsets":OFFSET})
 
 # The data from Kafka is returned as a tuple (Key, Value). So we'll want to
-# map the data and extract the value from the tuple
+# transform the DStream with a mappper and point to the value portion of our tuple
 value = kafkaStream.map(lambda line: line[1])
 
+#value is now a Dstream object
 print value
 
 # print type(value)
@@ -43,7 +43,9 @@ print value
 
 
 # Lazily instantiated global instance of SparkSession (This is a hack to grab
-#  sql context)
+# sql context, we need to create a SparkSession using the SparkContext that the
+# Streaming conext is using. The method enables this during restart of the
+# driver.
 def getSparkSessionInstance(sparkConf):
     if ("sparkSessionSingletonInstance" not in globals()):
         globals()["sparkSessionSingletonInstance"] = SparkSession \
@@ -88,25 +90,22 @@ def process(time, rdd):
         df.createOrReplaceTempView("CryptoCurrency")
 
         # spark.sql("SELECT * FROM CryptoCurrency").show()
+        # print "**** Price per transaction ****"
+        # spark.sql("SELECT cryptocurrency, price, basecurrency FROM CryptoCurrency WHERE (cryptocurrency == 'BTC' OR cryptocurrency == 'ETH') AND basecurrency == 'USD'").show()
 
-        #Get avg, max, min, and stdev for BTC, ETH, and ALX
+        # Get avg, max, min, and stdev for BTC, ETH, LTC, and ALX
+        # we need to normalize our standard deviation by dividing by our price average in order to calculate a per transaction normalized_stnd_dev closer to 0 is less volatile
         print "====== Running Statistics of CryptoCurrency ======="
-        spark.sql("SELECT cryptocurrency"
-                  ", avg(price) as average_price"
-                  ", max(price) as max_price"
-                  ", min(price) as min_price"
-                  ", std(price) as stnd_dev "
-                  "FROM CryptoCurrency "
-                  "WHERE cryptocurrency =='ADX' "
-                  "OR cryptocurrency == 'BTC' "
-                  "OR cryptocurrency == 'ETH' "
-                  "GROUP BY cryptocurrency "
-                  "ORDER BY cryptocurrency").show()
+        spark.sql("SELECT cryptocurrency, avg(price) as average_price, max(price) as max_price, min(price) as min_price, std(price) as std_dev, std(price)/avg(price)*100 as normalized_stnd_dev FROM CryptoCurrency WHERE (cryptocurrency =='ADX' OR cryptocurrency == 'BTC' OR cryptocurrency == 'LTC'OR cryptocurrency == 'ETH') AND basecurrency == 'USD'GROUP BY cryptocurrency ORDER BY cryptocurrency").show()
+
+        df.write(hbase)
+
     except:
         pass
 
-# conduct a functional transformation on our DStreams object value; we are
-# inserting our def process function here
+# conduct an operation on our DStreams object; we are
+# inserting our def process function here and applying said function to each
+# RDD generated in the stream
 value.foreachRDD(process)
 
 # start our computations and stop when the user has issued a keyboard command
