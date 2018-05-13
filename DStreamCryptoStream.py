@@ -5,8 +5,9 @@ from pyspark.sql import *
 from pyspark.sql.types import *
 
 """ Note: When running this app with spark-submit you need the following
-spark-submit --packages org.apache.spark:spark-streaming-kafka-0-8-assembly_2\
-.11:2.2.0 DStreamCryptoStream.py
+spark-submit --packages
+org.apache.spark:spark-streaming-kafka-0-8-assembly_2.11:2.2.0
+{appName.py}
 """
 
 MASTER = "local[*]"
@@ -89,16 +90,46 @@ def process(time, rdd):
         #Create a tempView so edits can be made in SQL
         df.createOrReplaceTempView("CryptoCurrency")
 
-        # spark.sql("SELECT * FROM CryptoCurrency").show()
+        # #Show All DataSets for USD
+        # spark.sql("""
+        # SELECT *
+        # FROM CryptoCurrency
+        # WHERE basecurrency == 'USD'
+        # """).show()
+
         # print "**** Price per transaction ****"
-        # spark.sql("SELECT cryptocurrency, price, basecurrency FROM CryptoCurrency WHERE (cryptocurrency == 'BTC' OR cryptocurrency == 'ETH') AND basecurrency == 'USD'").show()
+        # spark.sql("""
+        # SELECT cryptocurrency
+        # ,price
+        # ,basecurrency
+        # FROM CryptoCurrency
+        # WHERE (cryptocurrency == 'BTC'
+        # OR cryptocurrency == 'ETH')
+        # AND basecurrency == 'USD'""").show()
 
         # Get avg, max, min, and stdev for BTC, ETH, LTC, and ALX
-        # we need to normalize our standard deviation by dividing by our price average in order to calculate a per transaction normalized_stnd_dev closer to 0 is less volatile
-        print "====== Running Statistics of CryptoCurrency ======="
-        spark.sql("SELECT cryptocurrency, avg(price) as average_price, max(price) as max_price, min(price) as min_price, std(price) as std_dev, std(price)/avg(price)*100 as normalized_stnd_dev FROM CryptoCurrency WHERE (cryptocurrency =='ADX' OR cryptocurrency == 'BTC' OR cryptocurrency == 'LTC'OR cryptocurrency == 'ETH') AND basecurrency == 'USD'GROUP BY cryptocurrency ORDER BY cryptocurrency").show()
-
-        df.write(hbase)
+        # we need to normalize our standard deviation by dividing by our
+        # price average in order to calculate a per transaction
+        # normalized_stnd_dev closer to 0 is less volatile
+        print "**** Running Statistics of CryptoCurrency ****"
+        spark.sql("""
+        SELECT cryptocurrency
+        ,avg(price) - std(price) as lower_1_std_bound
+        ,avg(price) as average_price
+        ,avg(price) + std(price) as upper_1_std_bound
+        ,max(price) as max_price
+        ,min(price) as min_price
+        ,std(price) as 1_std
+        ,std(price) * 2 as 2_std
+        ,std(price)/avg(price)*100 as normalized_stnd_dev
+        FROM CryptoCurrency
+        WHERE (cryptocurrency =='ADX'
+        OR cryptocurrency == 'BTC'
+        OR cryptocurrency == 'LTC'
+        OR cryptocurrency == 'ETH')
+        AND basecurrency == 'USD'
+        GROUP BY cryptocurrency
+        ORDER BY cryptocurrency""").show()
 
     except:
         pass
